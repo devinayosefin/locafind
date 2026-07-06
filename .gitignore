@@ -5,7 +5,13 @@ __pycache__/
 .runtime_cache/
 .pytest_cache/
 
-models/
+gradio_app.py
+README_GRADIO.md
+
+models/*
+!models/
+!models/dataset.pkl
+!models/model_info.pkl
 static/static_1/
 
 .env

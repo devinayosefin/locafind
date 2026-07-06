@@ -1,4 +1,37 @@
-# LocaFind Web
+---
+title: LocaFind
+sdk: docker
+app_file: app.py
+python_version: 3.11
+pinned: false
+---
+
+# LocaFind Flask
+
+> Update: deploy Hugging Face sekarang memakai **Docker Space** supaya tampilan
+> Flask lama dari `templates/` dan `static/` tetap dipakai.
+
+## Deploy ke Hugging Face Spaces
+
+Project ini sudah disiapkan untuk Hugging Face Spaces dengan Docker. Saat
+membuat Space, pilih **Docker** sebagai SDK, bukan Gradio.
+
+File yang wajib ikut di-push:
+
+```text
+Dockerfile
+app.py
+flask_app.py
+engine.py
+requirements.txt
+templates/
+static/
+models/dataset.pkl
+models/model_info.pkl
+```
+
+Backend default adalah TF-IDF supaya build Space ringan dan tidak perlu install
+model SBERT besar. Tampilan tetap memakai halaman lama dari Flask.
 
 Frontend (`index.html`, `hasil.html`) sudah disambungkan ke engine rekomendasi
 (`build_model.py` + `engine.py`, hasil refactor dari `locafind_app.py`) lewat

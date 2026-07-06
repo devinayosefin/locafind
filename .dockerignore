@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.git/
+.runtime_cache/
+.pytest_cache/
+.venv/
+venv/
+env/
+
+gradio_app.py
+README_GRADIO.md
+
+models/embeddings.pkl
+models/processed_dataset.xlsx
+models/sentence_transformer/
+
+*.log

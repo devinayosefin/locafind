@@ -2,7 +2,5 @@ flask
 gunicorn
 pandas
 openpyxl
-sentence-transformers
 scikit-learn
-geopy
 requests

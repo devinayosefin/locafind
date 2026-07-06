@@ -1,6 +1,14 @@
 PANDUAN DEPLOY LOCAFIND KE RENDER
 =================================
 
+STATUS TERBARU:
+Panduan ini sekarang hanya arsip. Untuk percobaan terbaru, pakai Gradio di
+Hugging Face Spaces atau lokal:
+
+    python app.py
+
+Lihat README_GRADIO.md untuk langkah lengkapnya.
+
 Panduan ini dibuat untuk deploy aplikasi Flask LocaFind ke Render.
 
 Referensi resmi Render:
@@ -193,4 +201,3 @@ Error: model SBERT gagal dimuat
 Solusi:
 Pastikan build_model.py selesai sampai membuat models/sentence_transformer/.
 Jika masih gagal karena memory, gunakan LOCAFIND_EMBEDDING_BACKEND=tfidf.
-
