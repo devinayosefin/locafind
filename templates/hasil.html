@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LocaFind - Hasil Rekomendasi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    #map { height: 320px; width: 100%; border-radius: 12px; }
+    .hero-bg {
+      background-image: linear-gradient(to right, rgba(30, 64, 175, 0.85) 40%, rgba(30, 64, 175, 0.3) 100%),
+        url('{{ url_for("static", filename="images/hero.jpg") }}');
+      background-size: cover;
+      background-position: center;
+    }
+    .footer-bg {
+      background-image: linear-gradient(to right, rgba(30, 64, 175, 0.92) 45%, rgba(0,0,0,0.3) 100%),
+        url('{{ url_for("static", filename="images/footer.jpg") }}');
+      background-size: cover;
+      background-position: center;
+    }
+    .timeline-section {
+      max-width: 680px;
+      margin: 4.5rem auto 5rem;
+      padding: 0 1rem;
+    }
+    .timeline-table-wrap {
+      overflow-x: auto;
+      padding: 0 3px 4px;
+    }
+    .timeline-table {
+      width: 100%;
+      min-width: 560px;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .timeline-table thead th {
+      background: #1d4ed8;
+      color: white;
+      padding: 0.65rem 1.25rem;
+      text-align: center;
+      font-weight: 700;
+      border: 2px solid #2563eb;
+      border-radius: 8px;
+    }
+    .timeline-table tbody td {
+      background: white;
+      border: 2px solid #2563eb;
+      border-radius: 7px;
+      padding: 0.55rem 1.25rem;
+      text-align: center;
+      font-weight: 600;
+      color: #1d4ed8;
+    }
+    @media (max-width: 640px) {
+      .timeline-section { margin-top: 3rem; margin-bottom: 3.5rem; }
+    }
+  </style>
+</head>
+<body class="bg-white text-gray-800">
+
+  <!-- NAVBAR -->
+  <nav class="bg-blue-700 px-8 py-3 flex items-center justify-between fixed w-full top-0 z-50 shadow">
+    <div class="flex items-center gap-2">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M16 2C10.477 2 6 6.477 6 12C6 19 16 30 16 30C16 30 26 19 26 12C26 6.477 21.523 2 16 2Z" fill="white"/>
+        <circle cx="16" cy="12" r="5" fill="#1d4ed8"/>
+        <circle cx="16" cy="12" r="2.5" fill="white"/>
+      </svg>
+      <span class="text-white font-black text-lg tracking-tight"><span class="text-blue-200">Loca</span>Find</span>
+    </div>
+    <div class="flex items-center gap-8">
+      <a href="{{ url_for('index') }}" class="text-white font-medium hover:text-blue-200">Home</a>
+    </div>
+  </nav>
+
+  <!-- HERO KECIL -->
+  <section class="hero-bg pt-14">
+    <div class="max-w-7xl mx-auto px-8 py-12 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 2C10.477 2 6 6.477 6 12C6 19 16 30 16 30C16 30 26 19 26 12C26 6.477 21.523 2 16 2Z" fill="white"/>
+          <circle cx="16" cy="12" r="5" fill="#1d4ed8"/>
+          <circle cx="16" cy="12" r="2.5" fill="white"/>
+        </svg>
+        <div>
+          <h1 class="text-white text-4xl font-black mb-1"><span class="text-blue-200">Loca</span>Find</h1>
+          <div class="w-12 h-1 bg-white mb-2"></div>
+          <p class="text-white text-sm">Rencana perjalanan {{ result.visit_day }} · {{ result.start_time }} - {{ result.end_time }}</p>
+        </div>
+      </div>
+      <div class="text-right hidden md:block">
+        <h2 class="text-white text-3xl font-black">Find Smarter<br/>Explore Better</h2>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN CONTENT -->
+  <section class="max-w-7xl mx-auto px-6 py-10">
+
+    {% if result.places %}
+    <!-- PETA + REKOMENDASI TERATAS -->
+    <div class="flex gap-6 mb-10">
+      <div class="flex-1">
+        <div id="map"></div>
+      </div>
+      <div class="w-56 flex flex-col gap-2">
+        <h3 class="font-bold text-blue-700 text-base mb-1">Rekomendasi teratas</h3>
+        {% for p in result.top_recommendations %}
+        {% if p.maps_url %}
+        <a href="{{ p.maps_url }}" target="_blank" rel="noopener" class="bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg text-left hover:bg-blue-800 block">{{ loop.index }}. {{ p.name }}</a>
+        {% else %}
+        <button class="bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg text-left hover:bg-blue-800">{{ loop.index }}. {{ p.name }}</button>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- CARD TEMPAT -->
+    <div class="grid grid-cols-5 gap-3 mb-12">
+      {% for p in result.places %}
+      <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-100">
+        {% if p.photo %}
+        <div class="w-full h-24 border-b border-blue-100 overflow-hidden">
+          <img src="{{ url_for('static', filename='static_1/' ~ p.photo) }}" alt="{{ p.name }}" class="w-full h-24 object-cover"/>
+        </div>
+        {% else %}
+        <div class="w-full h-24 bg-blue-50 flex flex-col items-center justify-center gap-1 border-b border-blue-100">
+          <img src="{{ url_for('static', filename='images/icons/' ~ p.icon) }}" alt="" class="w-6 h-6"/>
+          <span class="text-[10px] text-blue-400 font-medium">Foto menyusul</span>
+        </div>
+        {% endif %}
+        <div class="p-2">
+          <h4 class="font-bold text-blue-700 text-xs mb-1">{{ p.name }}</h4>
+          <p class="text-xs text-gray-600 mb-1">Jam: {{ p.open_time }} - {{ p.close_time }}</p>
+          <p class="text-xs text-gray-600 mb-1">Kunjungan: {{ (p.duration_min / 60) | round(1) }} jam</p>
+          <p class="text-xs text-gray-600 mb-1">Biaya: Rp{{ "{:,.0f}".format(p.cost).replace(",", ".") }}</p>
+          <div class="flex items-center gap-1">
+            <span class="text-yellow-400 text-xs">★★★★★</span>
+            <span class="text-xs text-gray-500">{{ p.rating }} ({{ p.review_count }})</span>
+          </div>
+          {% if p.maps_url %}
+          <a href="{{ p.maps_url }}" target="_blank" rel="noopener" class="mt-1 inline-block text-[10px] text-blue-600 font-semibold hover:underline">📍 Lihat di Google Maps</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- TIMELINE ITINERARY -->
+    <section class="timeline-section">
+      <h2 class="text-blue-700 text-2xl font-black text-center mb-2">Timeline Itinerary</h2>
+      {% if result.order_mode == "auto" %}
+      <p class="text-center text-xs text-blue-500 mb-5">Preferensi kamu terdeteksi sebagai "terserah sistem" — urutan & pilihan tempat disusun otomatis berdasarkan rating &amp; kecocokan tertinggi.</p>
+      {% else %}
+      <div class="h-3" aria-hidden="true"></div>
+      {% endif %}
+      <div class="timeline-table-wrap">
+      <table class="timeline-table text-sm">
+        <thead>
+          <tr>
+            <th>Tempat</th>
+            <th>Jam</th>
+            <th>Estimasi Biaya</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in result.places %}
+          <tr>
+            <td>
+              {% if p.maps_url %}
+              <a href="{{ p.maps_url }}" target="_blank" rel="noopener" class="hover:underline hover:text-blue-900">{{ p.name }}</a>
+              {% else %}
+              {{ p.name }}
+              {% endif %}
+            </td>
+            <td>{{ p.arrive }} - {{ p.leave }}</td>
+            <td>Rp{{ "{:,.0f}".format(p.cost).replace(",", ".") }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </section>
+    </div>
+
+    <!-- TRIP SUMMARY -->
+    <h2 class="text-blue-700 text-xl font-black text-center mb-6">Trip Summary</h2>
+    <div class="relative rounded-2xl overflow-hidden bg-gray-100 p-8 mb-6"
+         style="background-image: linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), url('{{ url_for('static', filename='images/hero.jpg') }}'); background-size: cover; background-position: center;">
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-blue-700 rounded-xl p-4 text-center text-white">
+          <p class="text-xs font-semibold mb-1">Tempat Terpilih</p>
+          <p class="text-4xl font-black">{{ result.place_count }}</p>
+        </div>
+        <div class="bg-blue-700 rounded-xl p-4 text-center text-white">
+          <p class="text-xs font-semibold mb-1">Estimasi Budget</p>
+          <p class="text-2xl font-black">Rp{{ "{:,.0f}".format(result.used_budget).replace(",", ".") }}</p>
+        </div>
+        <div class="bg-blue-700 rounded-xl p-4 text-center text-white">
+          <p class="text-xs font-semibold mb-1">Durasi Total</p>
+          <p class="text-3xl font-black">{{ result.total_duration_hours }} Jam</p>
+        </div>
+        <div class="bg-blue-700 rounded-xl p-4 text-center text-white">
+          <p class="text-xs font-semibold mb-1">Total Jarak</p>
+          <p class="text-3xl font-black">{{ result.total_distance }} KM</p>
+        </div>
+      </div>
+      <div class="text-center">
+        <p class="text-gray-600 font-semibold text-sm mb-3">Status</p>
+        <div class="flex justify-center gap-4">
+          <span class="bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-semibold">{{ result.budget_status }}</span>
+          <span class="bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-semibold">{{ result.time_status }}</span>
+        </div>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- TIDAK ADA HASIL -->
+    <div class="text-center py-20">
+      <h2 class="text-blue-700 text-2xl font-black mb-3">Belum ada itinerary yang cocok</h2>
+      <p class="text-gray-500 text-sm mb-6">Coba longgarkan budget, ubah jam kunjungan, atau ganti preferensi tempatmu.</p>
+      <a href="{{ url_for('index') }}" class="bg-blue-700 hover:bg-blue-800 text-white font-bold px-6 py-3 rounded-xl text-sm">Cari Lagi</a>
+    </div>
+    {% endif %}
+
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer-bg py-16">
+    <div class="max-w-7xl mx-auto px-8 grid grid-cols-2 gap-8 items-center">
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 2C10.477 2 6 6.477 6 12C6 19 16 30 16 30C16 30 26 19 26 12C26 6.477 21.523 2 16 2Z" fill="white"/>
+            <circle cx="16" cy="12" r="5" fill="#1d4ed8"/>
+            <circle cx="16" cy="12" r="2.5" fill="white"/>
+          </svg>
+          <h2 class="text-white text-4xl font-black"><span class="text-blue-200">Loca</span>Find</h2>
+        </div>
+        <p class="text-white text-lg font-bold mb-2">Find Smarter · Explore Better</p>
+        <p class="text-blue-100 text-sm leading-relaxed max-w-sm">Temukan destinasi terbaik, susun perjalanan dengan mudah, dan nikmati pengalaman wisata yang lebih berkesan bersama LocaFind.</p>
+      </div>
+      <div></div>
+    </div>
+  </footer>
+
+  {% if result.places %}
+  <script>
+    var map = L.map('map').setView([{{ start_lat }}, {{ start_lon }}], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    var startMarker = L.marker([{{ start_lat }}, {{ start_lon }}], {
+      icon: L.icon({
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+      })
+    }).addTo(map);
+    startMarker.bindPopup('<b>Lokasi Awal</b>');
+
+    var places = [
+      {% for p in result.places %}
+      { name: {{ p.name | tojson }}, lat: {{ p.lat }}, lng: {{ p.lng }} },
+      {% endfor %}
+    ];
+
+    var latlngs = [[{{ start_lat }}, {{ start_lon }}]];
+    places.forEach(function(p, i) {
+      var marker = L.marker([p.lat, p.lng]).addTo(map);
+      marker.bindPopup('<b>' + (i+1) + '. ' + p.name + '</b>');
+      latlngs.push([p.lat, p.lng]);
+    });
+    L.polyline(latlngs, { color: '#1d4ed8', weight: 3 }).addTo(map);
+  </script>
+  {% endif %}
+
+</body>
+</html>

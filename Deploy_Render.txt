@@ -1,0 +1,196 @@
+PANDUAN DEPLOY LOCAFIND KE RENDER
+=================================
+
+Panduan ini dibuat untuk deploy aplikasi Flask LocaFind ke Render.
+
+Referensi resmi Render:
+- Flask di Render: https://render.com/docs/deploy-flask
+- Web Service Render: https://render.com/docs/web-services
+- Python version Render: https://render.com/docs/python-version
+
+
+1. FILE YANG SUDAH DISIAPKAN
+----------------------------
+
+Pastikan file berikut ada di folder project:
+
+- app.py
+- engine.py
+- build_model.py
+- requirements.txt
+- .python-version
+- Dataset LocaFind.xlsx
+- templates/
+- static/
+
+Catatan:
+requirements.txt sudah berisi gunicorn, karena Render menjalankan Flask
+production dengan start command gunicorn app:app.
+
+.python-version berisi 3.11.11 supaya Render tidak memakai Python terlalu baru
+yang berpotensi belum cocok dengan library ML seperti torch/sentence-transformers.
+
+
+2. PUSH PROJECT KE GITHUB
+-------------------------
+
+Render paling mudah deploy dari GitHub.
+
+Langkah umum:
+
+1. Buat repository GitHub.
+2. Upload/push folder project ini ke repository tersebut.
+3. Pastikan file Dataset LocaFind.xlsx ikut masuk.
+4. Pastikan folder static/ dan templates/ ikut masuk.
+
+Untuk folder models/, ada dua pilihan:
+
+Pilihan A - Disarankan untuk Render:
+Biarkan Render membuat ulang model saat build.
+Build command nanti menjalankan:
+
+    pip install -r requirements.txt && python build_model.py
+
+Pilihan B:
+Commit folder models/ juga ke GitHub.
+Ini bisa mempercepat build, tetapi ukuran repo bisa menjadi besar.
+
+
+3. BUAT WEB SERVICE DI RENDER
+-----------------------------
+
+1. Login ke https://dashboard.render.com
+2. Klik New
+3. Pilih Web Service
+4. Connect ke repository GitHub project ini
+5. Isi konfigurasi:
+
+   Name:
+      locafind
+
+   Runtime / Language:
+      Python 3
+
+   Branch:
+      main
+      atau branch yang kamu pakai
+
+   Root Directory:
+      Jika app.py berada langsung di root repo, kosongkan.
+      Jika app.py berada di subfolder "Project Machine Learning", isi:
+
+      Project Machine Learning
+
+   Build Command:
+
+      pip install -r requirements.txt && python build_model.py
+
+   Start Command:
+
+      gunicorn app:app
+
+
+4. ENVIRONMENT VARIABLE
+-----------------------
+
+Tambahkan environment variable berikut di Render jika perlu:
+
+LOCAFIND_EMBEDDING_BACKEND
+    sbert
+
+Artinya engine memakai embedding semantik SBERT.
+
+Kalau deploy gagal karena RAM/CPU terlalu berat, ganti menjadi:
+
+LOCAFIND_EMBEDDING_BACKEND
+    tfidf
+
+Mode TF-IDF lebih ringan, tetapi rekomendasi lebih literal.
+
+Opsional:
+
+LOCAFIND_DATASET_PATH
+    Dataset LocaFind.xlsx
+
+Biasanya tidak perlu di-set karena build_model.py sudah otomatis mencari
+Dataset LocaFind.xlsx di folder project.
+
+
+5. SETELAH DEPLOY
+-----------------
+
+Saat deploy pertama:
+
+1. Render install semua dependency.
+2. Render menjalankan build_model.py.
+3. build_model.py membuat:
+   - models/dataset.pkl
+   - models/embeddings.pkl
+   - models/model_info.pkl
+   - models/sentence_transformer/
+   - models/processed_dataset.xlsx
+4. Render menjalankan:
+
+      gunicorn app:app
+
+5. Aplikasi akan tersedia di URL:
+
+      https://nama-service.onrender.com
+
+
+6. CATATAN PENTING UNTUK MODEL SBERT
+------------------------------------
+
+Mode SBERT lebih bagus untuk pemahaman makna, tetapi lebih berat.
+
+Jika memakai instance gratis/kecil, kemungkinan:
+
+- Build lebih lama karena install torch dan sentence-transformers.
+- Request pertama lebih lambat karena model dimuat ke memory.
+- Bisa gagal jika memory instance tidak cukup.
+
+Jika itu terjadi, solusi cepat:
+
+1. Buka Render Dashboard.
+2. Masuk ke service LocaFind.
+3. Buka Environment.
+4. Set:
+
+      LOCAFIND_EMBEDDING_BACKEND=tfidf
+
+5. Redeploy.
+
+
+7. CATATAN TENTANG LOKASI USER
+------------------------------
+
+Saat app berjalan di Render, deteksi IP di backend bisa membaca lokasi server
+Render, bukan lokasi asli user. Untuk akurasi terbaik, fitur lokasi sebaiknya
+diambil dari browser user dengan JavaScript Geolocation lalu dikirim ke backend.
+
+Untuk demo Surabaya, fallback lokasi di app.py masih memakai pusat Kota
+Surabaya, jadi aplikasi tetap bisa berjalan.
+
+
+8. TROUBLESHOOTING CEPAT
+------------------------
+
+Error: gunicorn not found
+Solusi:
+Pastikan requirements.txt berisi gunicorn, lalu redeploy.
+
+Error: Dataset LocaFind.xlsx not found
+Solusi:
+Pastikan file dataset ikut ke GitHub dan Root Directory di Render benar.
+
+Error: models/embeddings.pkl tidak ditemukan
+Solusi:
+Pastikan Build Command berisi:
+
+    pip install -r requirements.txt && python build_model.py
+
+Error: model SBERT gagal dimuat
+Solusi:
+Pastikan build_model.py selesai sampai membuat models/sentence_transformer/.
+Jika masih gagal karena memory, gunakan LOCAFIND_EMBEDDING_BACKEND=tfidf.
+
